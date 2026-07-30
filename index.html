@@ -2,14 +2,244 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f766e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="NR509 Lab">
+  <meta name="description" content="Live NR509 standardized-patient and clinical interview practice lab.">
   <title>NR509 Midterm Clinical Lab</title>
-  <script>
-    window.location.replace('./nr509-clinical-lab-test.html' + window.location.search + window.location.hash);
-  </script>
+  <link rel="stylesheet" href="./styles.css?v=3.0.0">
 </head>
 <body>
-  <p>Opening NR509 Midterm Clinical Lab…</p>
-  <p><a href="./nr509-clinical-lab-test.html">Open the clinical lab</a></p>
+  <main class="shell">
+    <header>
+      <div>
+        <h1>NR509 Midterm Clinical Lab</h1>
+        <p class="subtitle">Live NP student + tutor/professor/patient practice</p>
+        <div id="versionText" class="version">Version 3.0.0</div>
+      </div>
+      <div class="status" aria-live="polite">
+        <span id="statusDot" class="dot"></span>
+        <span id="statusText">Not connected</span>
+      </div>
+    </header>
+
+    <section id="landing">
+      <div class="callout">
+        <strong>Persistent live practice sessions</strong>
+        <p class="notice">Your session saves on each device. Reopen the same link after a refresh or interruption and the program will restore progress and reconnect automatically.</p>
+      </div>
+
+      <section id="resumeCard" class="card hidden">
+        <span class="role-badge">Saved session</span>
+        <h2 style="margin-top:10px">Resume session <span id="resumeCode"></span></h2>
+        <p id="resumeRoleText" class="muted"></p>
+        <button id="resumeBtn" class="btn primary" type="button">Resume saved session</button>
+      </section>
+
+      <div class="grid two">
+        <section class="card">
+          <span class="role-badge">NP Student</span>
+          <h2 style="margin-top:10px">Create a live encounter</h2>
+          <p class="muted">Carlos starts here. The program creates a persistent six-character session and a patient/coach link.</p>
+          <button id="createBtn" class="btn primary" type="button">Create persistent session</button>
+        </section>
+
+        <section class="card">
+          <span class="role-badge">Tutor / Patient</span>
+          <h2 style="margin-top:10px">Join an encounter</h2>
+          <p class="muted">Use the link Carlos sends, or enter the session code manually.</p>
+          <label for="joinCode">Six-character session code</label>
+          <input id="joinCode" type="text" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Example: H7K2QP">
+          <button id="joinBtn" class="btn primary" type="button" style="margin-top:10px">Join as tutor / patient</button>
+        </section>
+      </div>
+    </section>
+
+    <section id="waitingPanel" class="hidden">
+      <div class="card">
+        <span id="waitingRole" class="role-badge"></span>
+        <h2 style="margin-top:10px">Session <span id="sessionCode" class="session-code"></span></h2>
+        <p id="waitingText" class="muted"></p>
+        <div id="coachLink" class="share-link"></div>
+        <div class="button-row">
+          <button id="shareBtn" class="btn primary" type="button">Share patient/coach link</button>
+          <button id="copyBtn" class="btn" type="button">Copy link</button>
+          <button id="forceReconnectBtn" class="btn soft" type="button">Reconnect now</button>
+          <button id="cancelBtn" class="btn danger" type="button">Back to start</button>
+        </div>
+        <p class="notice">Keep this page or its saved link. A temporary disconnect does not require a new session.</p>
+      </div>
+    </section>
+
+    <section id="appPanel" class="hidden">
+      <section class="card">
+        <div class="toolbar">
+          <div>
+            <span id="roleBadge" class="role-badge"></span>
+            <h2 style="margin-top:9px;margin-bottom:2px">Active session <span id="activeCode"></span></h2>
+            <div id="saveStatus" class="notice">Preparing local autosave…</div>
+          </div>
+          <div class="button-row">
+            <button id="forceReconnectBtn" class="btn soft" type="button">Reconnect now</button>
+            <button id="newSessionBtn" class="btn" type="button">Start screen</button>
+          </div>
+        </div>
+      </section>
+
+      <div class="grid four">
+        <div class="metric"><strong id="currentStepMetric">1</strong><span>Current section</span></div>
+        <div class="metric"><strong id="progressMetric">0%</strong><span>Student completion</span></div>
+        <div class="metric"><strong id="releasedMetric">0</strong><span>Findings released</span></div>
+        <div class="metric"><strong id="missedMetric">0</strong><span>Sections missed</span></div>
+      </div>
+      <div class="progress" aria-label="Encounter progress"><div id="progressBar"></div></div>
+
+      <section id="studentView" class="hidden" style="margin-top:14px">
+        <div class="callout">
+          <div class="section-label">Patient introduction</div>
+          <strong id="studentPatientIntro"></strong>
+          <div id="studentOpening" style="margin-top:7px"></div>
+        </div>
+
+        <div class="grid two">
+          <section class="card">
+            <h2>Professor-ordered encounter pathway</h2>
+            <p class="muted">Complete each section aloud. The sequence follows the comprehensive health-history order, then examination and clinical reasoning.</p>
+            <div id="studentWorkflow"></div>
+          </section>
+
+          <section>
+            <div class="card">
+              <h2>Live patient responses</h2>
+              <div id="studentFeed" class="feed"></div>
+            </div>
+
+            <div class="card">
+              <h2>Released findings</h2>
+              <div id="studentFindings"></div>
+            </div>
+
+            <div class="card">
+              <h2>Working synthesis</h2>
+              <label for="studentNotes">Key findings, problem statement, differential, and plan</label>
+              <textarea id="studentNotes" placeholder="Document your working clinical reasoning here…"></textarea>
+              <p class="notice">Autosaved on this device and visible to the tutor/patient during the live session.</p>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section id="coachView" class="hidden" style="margin-top:14px">
+        <div class="callout">
+          <div class="section-label">Tutor / professor / patient mode</div>
+          <strong>Act as the patient, enter symptoms live, withhold hidden information until asked, release exam findings, and score every section.</strong>
+        </div>
+
+        <section class="card">
+          <h2>Build or select the patient</h2>
+          <label for="templateSelect">Starting case</label>
+          <select id="templateSelect">
+            <option value="heent">Week 3 · HEENT sore throat</option>
+            <option value="resp">Week 3 · Respiratory cough</option>
+            <option value="cardio">Week 4 · Exertional chest pressure</option>
+            <option value="vascular">Week 4 · Peripheral vascular leg swelling</option>
+            <option value="custom">Completely custom patient</option>
+          </select>
+
+          <div class="grid two" style="margin-top:12px">
+            <label for="patientName">Patient name<input id="patientName" type="text" placeholder="Fictional name"></label>
+            <label for="patientAge">Age<input id="patientAge" type="number" min="0" max="120" placeholder="Age"></label>
+            <label for="patientPronouns">Pronouns<input id="patientPronouns" type="text" placeholder="she/her, he/him, they/them"></label>
+            <label for="patientHistorian">Historian and reliability<input id="patientHistorian" type="text" placeholder="Self; reliable"></label>
+          </div>
+          <label for="patientChief" style="margin-top:10px">Chief concern<input id="patientChief" type="text" placeholder="Reason for encounter"></label>
+          <label for="patientOpening" style="margin-top:10px">Opening statement<textarea id="patientOpening" placeholder="What the patient says before detailed questioning"></textarea></label>
+          <label for="patientBehavior" style="margin-top:10px">Patient behavior / affect<textarea id="patientBehavior" placeholder="How to portray the patient"></textarea></label>
+        </section>
+
+        <div class="grid two">
+          <section class="card">
+            <h2>Answer as the patient—live</h2>
+            <p class="muted">Type only what Carlos earned by asking the appropriate question. The response appears on both screens.</p>
+            <label for="patientResponse">Patient response</label>
+            <textarea id="patientResponse" placeholder="Example: It started three days ago and is worse when I swallow."></textarea>
+            <div class="button-row">
+              <button id="sendResponseBtn" class="btn primary" type="button">Send response</button>
+              <button id="urgentResponseBtn" class="btn danger" type="button">Send as urgent/red flag</button>
+            </div>
+            <div id="coachFeed" class="feed" style="margin-top:14px"></div>
+          </section>
+
+          <section class="card">
+            <h2>Student’s live working notes</h2>
+            <div id="coachNotes" class="share-link">No student notes entered yet.</div>
+            <label for="coachPrivateNotes" style="margin-top:12px">Private tutor notes</label>
+            <textarea id="coachPrivateNotes" placeholder="Private feedback saved only on this device"></textarea>
+          </section>
+        </div>
+
+        <section class="card">
+          <h2>Hidden symptoms and physical findings</h2>
+          <p class="muted">Edit the preset information or add anything your custom patient needs. Release a finding only after the student asks the correct question or performs the correct maneuver.</p>
+          <div id="coachFindings"></div>
+          <details>
+            <summary>Add a custom symptom, answer, or examination finding</summary>
+            <div class="details-body">
+              <label for="newFindingSection">Professor section</label>
+              <select id="newFindingSection">
+                <option value="identifying">Identifying Information & Historian Reliability</option>
+                <option value="chief">Chief Concern</option>
+                <option value="hpi">History of Present Illness</option>
+                <option value="medications">Current Medications & Supplements</option>
+                <option value="allergies">Allergies & Exact Reactions</option>
+                <option value="past">Past Medical & Surgical History</option>
+                <option value="preventive">Preventive Health & Immunizations</option>
+                <option value="family">Family History</option>
+                <option value="social">Personal & Social History</option>
+                <option value="function">Functional Assessment & Social Determinants</option>
+                <option value="ros">Review of Systems</option>
+                <option value="exam">Physical Examination</option>
+                <option value="key">Key Findings</option>
+                <option value="problem">Problem Statement</option>
+                <option value="differential">Differential Diagnoses</option>
+                <option value="plan">Management Plan</option>
+                <option value="debrief">Debrief & Remediation</option>
+              </select>
+              <label for="newFindingLabel" style="margin-top:10px">Label<input id="newFindingLabel" type="text" placeholder="Example: Onset"></label>
+              <label for="newFindingText" style="margin-top:10px">Patient answer or finding<textarea id="newFindingText" placeholder="Enter the exact response or finding"></textarea></label>
+              <button id="addFindingBtn" class="btn primary" type="button">Add hidden finding</button>
+            </div>
+          </details>
+        </section>
+
+        <section class="card">
+          <h2>Professor-sequence scoring</h2>
+          <p class="muted">Move the shared encounter to any section and mark performance as independent, prompted, or missed.</p>
+          <div id="coachWorkflow"></div>
+        </section>
+      </section>
+
+      <div class="sticky-actions">
+        <div class="toolbar">
+          <div class="button-row">
+            <button id="previousStepBtn" class="btn" type="button">Previous section</button>
+            <button id="nextStepBtn" class="btn primary" type="button">Next section</button>
+          </div>
+          <div class="button-row">
+            <button id="resetBtn" class="btn soft" type="button">Reset encounter</button>
+            <button id="endBtn" class="btn danger" type="button">End on this device</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <p class="footer-note">Educational simulation only. Use fictional information—never real patient identifiers or protected health information.</p>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="./app-core.js?v=3.0.0"></script>
+  <script src="./app-render.js?v=3.0.0"></script>
 </body>
 </html>
