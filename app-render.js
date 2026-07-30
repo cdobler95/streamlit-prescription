@@ -124,6 +124,7 @@ async function copyCoachLink(){
   try{await navigator.clipboard.writeText(url);$('copyBtn').textContent='Copied ✓';}catch(_){prompt('Copy this link:',url);}
 }
 function forceReconnect(){if(role==='student')startStudentHost();else startCoachClient();}
+function scheduleStateSend(){saveLocal();sendState();}
 function moveStep(delta){
   const next=Math.max(0,Math.min(workflow.length-1,state.currentStep+delta));
   if(role==='student')studentUpdate(()=>{state.currentStep=next;});else coachAction('setCurrentStep',{index:next});
@@ -145,17 +146,19 @@ function addCustomFinding(){
   $('newFindingLabel').value='';$('newFindingText').value='';
 }
 function resetEncounter(){
-  if(!confirm('Reset this encounter? Patient setup stays, but scores, progress, released findings, messages, and student notes will clear.'))return;
-  const reset=()=>{
-    state.currentStep=0;state.completed={};state.scores={};state.released={};state.studentNotes='';state.feed=[{id:uid('system'),kind:'system',text:'Encounter reset. Begin with identifying information and historian reliability.',ts:Date.now()}];state.ended=false;
-  };
-  if(role==='student')studentUpdate(reset);else{
-    reset();touchState();saveLocal(true);renderAll();
-    const actions=[
-      {id:uid('action'),kind:'setCurrentStep',payload:{index:0},ts:Date.now()}
-    ];
-    pendingActions.push(...actions);if(conn&&conn.open)send({type:'actions',actions:pendingActions});
+  if(role!=='student'){
+    alert('For a complete shared reset, ask the NP student to tap Reset encounter.');
+    return;
   }
+  if(!confirm('Reset this encounter? Patient setup stays, but scores, progress, released findings, messages, and student notes will clear.'))return;
+  state.currentStep=0;
+  state.completed={};
+  state.scores={};
+  state.released={};
+  state.studentNotes='';
+  state.feed=[{id:uid('system'),kind:'system',text:'Encounter reset. Begin with identifying information and historian reliability.',ts:Date.now()}];
+  state.ended=false;
+  studentUpdate(()=>{});
 }
 function endSession(){
   if(!confirm('End this session on this device? Saved progress will remain unless you start a new session.'))return;
@@ -174,7 +177,7 @@ function setupEvents(){
   $('shareBtn').addEventListener('click',shareCoachLink);
   $('copyBtn').addEventListener('click',copyCoachLink);
   $('cancelBtn').addEventListener('click',startFresh);
-  $('forceReconnectBtn').addEventListener('click',forceReconnect);
+  document.querySelectorAll('#forceReconnectBtn').forEach(btn=>btn.addEventListener('click',forceReconnect));
   $('newSessionBtn').addEventListener('click',startFresh);
   $('previousStepBtn').addEventListener('click',()=>moveStep(-1));
   $('nextStepBtn').addEventListener('click',()=>moveStep(1));
@@ -194,7 +197,7 @@ function setupEvents(){
   $('patientResponse').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendPatientResponse(false);}});
   $('addFindingBtn').addEventListener('click',addCustomFinding);
   $('coachPrivateNotes').addEventListener('input',e=>{coachPrivateNotes=e.target.value;saveLocal();});
-  window.addEventListener('online',forceReconnect);
+  window.addEventListener('online',()=>{if(role&&sessionCode)forceReconnect();});
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&role&&sessionCode&&(!conn||!conn.open))forceReconnect();});
   window.addEventListener('beforeunload',()=>saveLocal(true));
 }
